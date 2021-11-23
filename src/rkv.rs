@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum KeyValueAction {
@@ -42,5 +43,39 @@ impl KeyValueCmd {
 
             Ok(ret)
         }
+    }
+
+    pub fn run(self, db: & mut HashMap<String, String>) -> Vec<u8> {
+        let mut ret_vec = Vec::new();
+
+        let mut str2vec = |x: String| {
+            for value in x.as_bytes().iter() {
+                ret_vec.push(*value)
+            }
+         };
+
+        match self.action {
+            KeyValueAction::KvSet => {
+                let buf = format!("{}: {}\n",self.key, self.value);
+                db.insert(self.key, self.value);
+                str2vec(buf);
+            },
+            KeyValueAction::KvGet => {
+                let buf = db.get(&self.key);
+                match buf {
+                    Some(buf) => str2vec(buf.clone()),
+                    None => str2vec("Cannot found!\n".to_string())
+                }
+            },
+            KeyValueAction::KvDel => {
+                let buf = db.remove(&self.key);
+                match buf {
+                    Some(_buf) => str2vec("Removed!\n".to_string()),
+                    None => str2vec("Cannot found!!!\n".to_string())
+                }
+            },
+            _ => str2vec("Unsupport!!!\n".to_string())
+        }
+        ret_vec
     }
 }
